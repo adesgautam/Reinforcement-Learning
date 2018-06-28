@@ -9,19 +9,21 @@ class QTable:
 
 	def __init__(self):
 		self.actions = [0, 1]
-		self.epsilon = 0.5
+		self.epsilon = 0.9
 		self.lr_rate = 0.5
 		self.gamma = 0.9
 		self.Q = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
 	def choose_action(self, state):
+		self.check_state_exist(state)
+
 		action=0
-		if not np.random.random() < self.epsilon:
-			action = self.Q.loc[state, :]
-			action = action.reindex(np.random.permutation(action.index))     # some actions have same value
-			action = action.idxmax()
-		else:
+		if np.random.random() < self.epsilon:
 			action = np.random.choice(self.actions)
+		else:
+			action = self.Q.loc[state, :]
+			action = action.reindex(np.random.permutation(action.index))  # some actions have same value
+			action = action.idxmax()
 
 		return action
 
@@ -38,7 +40,6 @@ class QTable:
 		return state
 
 	def learn(self, state, state2, reward, action):
-
 		# Get value from state2
 		self.check_state_exist(state2)
 
@@ -48,32 +49,25 @@ class QTable:
 		self.Q.loc[state, action] += self.lr_rate * (target - predict)
 
 # Start
-
 QT = QTable()
 
-# state = env.reset()
-# state = QT.discretize(state)
 max_r = 0
 for episode in range(1, 500):
-	done = False
 	G, reward = 0, 0
 
 	state = QT.discretize(env.reset())
 
 	t = 0
-	# print("Episode: ", episode)
 	while True:
-		# print(t)q
 		env.render()
 
-		QT.check_state_exist(state)
-		action = QT.choose_action(state)  # 1
+		action = QT.choose_action(state)  
 
-		state2, reward, done, info = env.step(action)  # 2
+		state2, reward, done, info = env.step(action)  
 
 		state2 = QT.discretize(state2)
 		QT.learn(state, state2, reward, action)
-		# print(state, action, reward)
+
 		state = state2
 
 		t += 1
@@ -81,6 +75,7 @@ for episode in range(1, 500):
 
 		if done:
 			break
+
 	if G > max_r:
 		max_r = G
 	# if episode % 10 == 10:

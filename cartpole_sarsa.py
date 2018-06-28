@@ -15,6 +15,8 @@ class SarsaTable:
 		self.Q = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
 	def choose_action(self, state):
+		self.check_state_exist(state)
+
 		action=0
 		if not np.random.random() < self.epsilon:
 			action = self.Q.loc[state, :]
@@ -33,17 +35,16 @@ class SarsaTable:
 	def discretize(self, state):
 		t=[]
 		for i in state:
-			t.append(round(i,1))
-		state = str(t)
+			t.append(round(i,2))
+		state = str(t[2:])
 		return state
 
-	def learn(self, state, state2, reward, action):
-
+	def learn(self, state, state2, reward, action, action2):
 		# Get value from state2
 		self.check_state_exist(state2)
 
 		predict = self.Q.loc[state][action]
-		target = reward + self.gamma * self.Q.loc[state2, action]
+		target = reward + self.gamma * self.Q.loc[state2, action2]
 
 		self.Q.loc[state, action] += self.lr_rate * (target - predict)
 
@@ -52,30 +53,28 @@ class SarsaTable:
 
 ST = SarsaTable()
 
-state = env.reset()
-state = ST.discretize(state)
-
+max_r = 0
 for episode in range(1, 500):
-	done = False
 	G, reward = 0, 0
 
 	state = ST.discretize(env.reset())
 
+	action = ST.choose_action(state)
+
 	t = 0
-	print("Episode: ", episode)
 	while True:
-		# print(t)
 		env.render()
 
-		ST.check_state_exist(state)
-		action = ST.choose_action(state)  # 1
-
-		state2, reward, done, info = env.step(action)  # 2
-
+		state2, reward, done, info = env.step(action)  
 		state2 = ST.discretize(state2)
-		ST.learn(state, state2, reward, action)
-		# print(state, action, reward)
+
+		action2 = ST.choose_action(state2)
+		
+		ST.learn(state, state2, reward, action, action2)
+		print(state2, reward, action2)
+		
 		state = state2
+		action = action2
 
 		t += 1
 		G += reward
@@ -83,8 +82,10 @@ for episode in range(1, 500):
 		if done:
 			break
 
-	if episode % 10 == 0:
-		print('Episode {0} Total Reward: {1}'.format(episode, G))
+	if G > max_r:
+		max_r = G
+	# if episode % 10 == 10:
+	print('Episode {0} Total Reward: {1} Max Reward: {2}'.format(episode, G, max_r))
 
 
 
