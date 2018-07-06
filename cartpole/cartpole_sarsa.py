@@ -5,12 +5,12 @@ import pandas as pd
 
 env = gym.make('CartPole-v0')
 
-class QTable:
+class SarsaTable:
 
 	def __init__(self):
 		self.actions = [0, 1]
 		self.epsilon = 0.9
-		self.lr_rate = 0.5
+		self.lr_rate = 0.01
 		self.gamma = 0.9
 		self.Q = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
@@ -18,12 +18,12 @@ class QTable:
 		self.check_state_exist(state)
 
 		action=0
-		if np.random.random() < self.epsilon:
-			action = np.random.choice(self.actions)
-		else:
+		if not np.random.random() < self.epsilon:
 			action = self.Q.loc[state, :]
-			action = action.reindex(np.random.permutation(action.index))  # some actions have same value
+			action = action.reindex(np.random.permutation(action.index))     # some actions have same value
 			action = action.idxmax()
+		else:
+			action = np.random.choice(self.actions)
 
 		return action
 
@@ -35,40 +35,46 @@ class QTable:
 	def discretize(self, state):
 		t=[]
 		for i in state:
-			t.append(round(i,1))
-		state = str(t)
+			t.append(round(i,2))
+		state = str(t[2:])
 		return state
 
-	def learn(self, state, state2, reward, action):
+	def learn(self, state, state2, reward, action, action2):
 		# Get value from state2
 		self.check_state_exist(state2)
 
 		predict = self.Q.loc[state][action]
-		target = reward + self.gamma * self.Q.loc[state2, :].max()
+		target = reward + self.gamma * self.Q.loc[state2, action2]
 
 		self.Q.loc[state, action] += self.lr_rate * (target - predict)
 
+
 # Start
-QT = QTable()
+
+ST = SarsaTable()
 
 max_r = 0
 for episode in range(1, 500):
 	G, reward = 0, 0
 
-	state = QT.discretize(env.reset())
+	state = ST.discretize(env.reset())
+
+	action = ST.choose_action(state)
 
 	t = 0
 	while True:
 		env.render()
 
-		action = QT.choose_action(state)  
-
 		state2, reward, done, info = env.step(action)  
+		state2 = ST.discretize(state2)
 
-		state2 = QT.discretize(state2)
-		QT.learn(state, state2, reward, action)
-
+		action2 = ST.choose_action(state2)
+		
+		ST.learn(state, state2, reward, action, action2)
+		print(state2, reward, action2)
+		
 		state = state2
+		action = action2
 
 		t += 1
 		G += reward
@@ -80,6 +86,28 @@ for episode in range(1, 500):
 		max_r = G
 	# if episode % 10 == 10:
 	print('Episode {0} Total Reward: {1} Max Reward: {2}'.format(episode, G, max_r))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

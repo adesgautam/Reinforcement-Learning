@@ -5,12 +5,12 @@ import pandas as pd
 
 env = gym.make('CartPole-v0')
 
-class SarsaTable:
+class QTable:
 
 	def __init__(self):
 		self.actions = [0, 1]
-		self.epsilon = 0.5
-		self.lr_rate = 0.01
+		self.epsilon = 0.9
+		self.lr_rate = 0.5
 		self.gamma = 0.9
 		self.Q = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
@@ -18,96 +18,71 @@ class SarsaTable:
 		self.check_state_exist(state)
 
 		action=0
-		if not np.random.random() < self.epsilon:
-			action = self.Q.loc[state, :]
-			action = action.reindex(np.random.permutation(action.index))     # some actions have same value
-			action = action.idxmax()
-		else:
+		if np.random.random() < self.epsilon:
 			action = np.random.choice(self.actions)
+		else:
+			action = self.Q.loc[state, :]
+			action = action.reindex(np.random.permutation(action.index))  # some actions have same value
+			action = action.idxmax()
 
 		return action
 
 	def check_state_exist(self, state):
 		# Check state exists in Q table. if not exist then add to Q
 		if state not in self.Q.index:
-			self.Q = self.Q.append(pd.Series([0,0], index=self.Q.columns, name=state))
+			actions = [0 for _ in range(len(self.actions))]
+			self.Q = self.Q.append(pd.Series(actions, index=self.Q.columns, name=state))
 
 	def discretize(self, state):
 		t=[]
 		for i in state:
-			t.append(round(i,2))
-		state = str(t[2:])
+			t.append(round(i,1))
+		state = str(t)
 		return state
 
-	def learn(self, state, state2, reward, action, action2):
+	def learn(self, state, state2, reward, action):
 		# Get value from state2
 		self.check_state_exist(state2)
 
 		predict = self.Q.loc[state][action]
-		target = reward + self.gamma * self.Q.loc[state2, action2]
+		target = reward + self.gamma * self.Q.loc[state2, :].max()
 
 		self.Q.loc[state, action] += self.lr_rate * (target - predict)
 
-
 # Start
-
-ST = SarsaTable()
+QT = QTable()
 
 max_r = 0
 for episode in range(1, 500):
 	G, reward = 0, 0
 
-	state = ST.discretize(env.reset())
-
-	action = ST.choose_action(state)
+	state = QT.discretize(env.reset())
 
 	t = 0
 	while True:
 		env.render()
 
-		state2, reward, done, info = env.step(action)  
-		state2 = ST.discretize(state2)
+		action = QT.choose_action(state)  
 
-		action2 = ST.choose_action(state2)
-		
-		ST.learn(state, state2, reward, action, action2)
-		print(state2, reward, action2)
-		
+		state2, reward, done, info = env.step(action)  
+
+		state2 = QT.discretize(state2)
+		QT.learn(state, state2, reward, action)
+
 		state = state2
-		action = action2
 
 		t += 1
 		G += reward
 
 		if done:
 			break
+	if t%20 == 0:
+		QT.epsilon -= 0.1
 
 	if G > max_r:
 		max_r = G
 	# if episode % 10 == 10:
-	print('Episode {0} Total Reward: {1} Max Reward: {2}'.format(episode, G, max_r))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	print('Episode {0} Epsilon {1} Total Reward: {2} Max Reward: {3}'.format(episode, QT.epsilon, G, max_r))
 
 
 
