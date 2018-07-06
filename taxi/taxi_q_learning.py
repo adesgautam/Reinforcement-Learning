@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import time, pickle, os
 
-env = gym.make('FrozenLake-v0')
+env = gym.make('Taxi-v2')
 
 epsilon = 0.9
 # min_epsilon = 0.1
@@ -14,7 +14,7 @@ total_episodes = 10000
 max_steps = 100
 
 lr_rate = 0.81
-gamma = 0.96
+gamma = 0.65
 
 Q = np.zeros((env.observation_space.n, env.action_space.n))
     
@@ -39,7 +39,7 @@ for episode in range(total_episodes):
     t = 0
     
     while t < max_steps:
-        env.render()
+        # env.render()
 
         action = choose_action(state)  
 
@@ -55,17 +55,14 @@ for episode in range(total_episodes):
             break
 #     epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * episode) 
         # os.system('clear')
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
     
 print ("Score over time: ", rewards/total_episodes)
 print(Q)
 
-with open("frozenLake_qTable.pkl", 'wb') as f:
+with open("taxi_qTable.pkl", 'wb') as f:
     pickle.dump(Q, f)
-
-
-
 
 
 
