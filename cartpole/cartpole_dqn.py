@@ -178,6 +178,7 @@ for episode in range(1, 1000):
 
 		step+=1
 
+
 print("GAME OVER !!!")
 brain.plot_cost()
 
