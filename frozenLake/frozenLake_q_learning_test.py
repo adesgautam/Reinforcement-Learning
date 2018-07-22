@@ -1,12 +1,11 @@
 
 import gym
 import numpy as np
-import pandas as pd
 import time
 import pickle, os
 
 env = gym.make('FrozenLake-v0')
-# Q = pd.read_pickle("frozenLake_qTable.pkl")
+
 with open("frozenLake_qTable.pkl", 'rb') as f:
 	Q = pickle.load(f)
 
@@ -18,16 +17,15 @@ def choose_action(state):
 for episode in range(5):
 
 	state = env.reset()
-	print("********Episode: ", episode)
+	print("*** Episode: ", episode)
 	t = 0
 	while t < 100:
 		env.render()
 
 		action = choose_action(state)  
-		print("Action: ", action)
+		
 		state2, reward, done, info = env.step(action)  
-		# if state2==15:
-		# 	print("state 15")
+		
 		state = state2
 
 		if done:

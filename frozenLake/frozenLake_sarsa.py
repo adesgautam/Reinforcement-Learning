@@ -26,42 +26,45 @@ def choose_action(state):
         action = np.argmax(Q[state, :])
     return action
 
-def learn(state, state2, reward, action):
+def learn(state, state2, reward, action, action2):
     predict = Q[state, action]
-    target = reward + gamma * np.max(Q[state2, :])
+    target = reward + gamma * Q[state2, action2]
     Q[state, action] = Q[state, action] + lr_rate * (target - predict)
 
 # Start
 rewards=0
 
 for episode in range(total_episodes):
-    state = env.reset()
-    t = 0
+	t = 0
+	state = env.reset()
+	action = choose_action(state)
     
-    while t < max_steps:
-        env.render()
+	while t < max_steps:
+		env.render()
 
-        action = choose_action(state)  
+		state2, reward, done, info = env.step(action)
 
-        state2, reward, done, info = env.step(action)  
+		action2 = choose_action(state2)
 
-        learn(state, state2, reward, action)
+		learn(state, state2, reward, action, action2)
 
-        state = state2
+		state = state2
+		action = action2
 
-        t += 1
-        rewards+=1
-        if done:
-            break
+		t += 1
+		rewards+=1
+
+		if done:
+			break
 #     epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * episode) 
         # os.system('clear')
-        time.sleep(0.1)
+		time.sleep(0.1)
 
     
 print ("Score over time: ", rewards/total_episodes)
 print(Q)
 
-with open("frozenLake_qTable.pkl", 'wb') as f:
+with open("frozenLake_qTable_sarsa.pkl", 'wb') as f:
     pickle.dump(Q, f)
 
 
