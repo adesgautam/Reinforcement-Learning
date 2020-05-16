@@ -4,44 +4,10 @@ import numpy as np
 import time, pickle, os
 import matplotlib.pyplot as plt
 
-
-class Model():
-    def __init__(self, n_states, n_actions):
-        self.transitions = np.zeros((n_states, n_actions), dtype=np.uint8)
-        self.rewards = np.zeros((n_states, n_actions))
-
-    def add(self, state, action, state2, reward):
-        self.transitions[state, action] = state2
-        self.rewards[state, action] = reward 
-
-    def sample(self, env):
-        state, action = 0, 0
-        # Random visited state
-        if all(np.sum(self.transitions, axis=1)) <= 0:
-            state = np.random.randint(env.observation_space.n)
-        else:
-            state = np.random.choice(np.where(np.sum(self.transitions, axis=1) > 0)[0])
-
-        # Random action in that state
-        if all(self.transitions[state]) <= 0:
-            action = np.random.randint(env.action_space.n)
-        else:    
-            action = np.random.choice(np.where(self.transitions[state] > 0)[0])
-
-        return state, action
-
-    def step(self, state, action):
-        state2 = self.transitions[state, action]
-        # Reward + bonus
-        reward = self.rewards[state, action] + kappa * np.sqrt(agent.timesteps[state])
-        return state2, reward 
-
 class Agent:
     def __init__(self, env):
         self.env = env
         self.Q = np.zeros((env.observation_space.n, env.action_space.n))
-        self.model = Model(env.observation_space.n, env.action_space.n)
-        self.timesteps = np.zeros((env.observation_space.n, 1))
 
     def choose_action(self, state):
         if np.random.uniform(0, 1) < epsilon:
@@ -60,7 +26,6 @@ class Agent:
         for i in range(n_steps):
             state, action =  self.model.sample(self.env)
             state2, reward = self.model.step(state, action)
-
             self.learn(state, state2, reward, action)
 
 def train():
@@ -77,11 +42,6 @@ def train():
             state2, reward, done, info = agent.env.step(action)  
 
             agent.learn(state, state2, reward, action)
-
-            agent.model.add(state, action, state2, reward)
-            agent.timesteps[state] += 1
-            agent.planning(planning_steps)
-
             state = state2
 
             ep_rewards+= reward
@@ -117,7 +77,6 @@ def test():
     
 def train_details(total_rewards):
     print("Q table:\n", agent.Q)
-    print("Model Transitions:\n", agent.model.transitions)
 
     # Perfect actions: [1 2 1 0 1 0 1 0 2 1 1 0 0 2 2 0]
     print("Total Rewards in training: {0} in {1} episodes".format(sum(total_rewards), total_episodes))
@@ -152,8 +111,6 @@ env = gym.make('FrozenLake-v0')
 epsilon = 0.9
 lr_rate = 0.1
 gamma = 0.95
-planning_steps = 100
-kappa = 1e-4 # bonus reward weight
 
 total_episodes = 10000
 max_steps = 100
